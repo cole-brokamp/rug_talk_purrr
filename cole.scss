@@ -1,0 +1,19 @@
+/*-- scss:defaults --*/
+
+$body-bg: #E0E5E7;
+$body-color: #072B67;
+$link-color: #C2326B;
+$code-block-bg: darken($body-bg,5%);
+$code-block-border-color: $code-block-bg;
+$code-bg: $body-bg;
+$code-color: $body-color;
+$presentation-font-size-root: 36px;
+$presentation-line-height: 1.5;
+$presentation-heading-line-height: 1;
+$presentation-h1-font-size: 1.5em;
+$presentation-h2-font-size: 1.2em;
+$presentation-h3-font-size: 1.1em;
+$presentation-h4-font-size: 1em;
+$presentation-block-margin: 72px;
+
+/*-- scss:rules --*/

@@ -1,0 +1,321 @@
+---
+title: "Functional Programming in R with `purrr`"
+subtitle: "CCHMC R Users Group"
+author: "Cole Brokamp"
+date: 2022-02-08
+format: 
+  revealjs:
+    theme: cole.scss
+    standalone: true
+    embed-resources: true
+---
+
+## Welcome
+
+[Join](https://outlook.office365.com/owa/r@cchmc.onmicrosoft.com/groupsubscription.ashx?action=join) the RUG Outlook group for updates and events.
+![](purrr_figs/join_rug.png){fig-align="center"}{width=180%}
+
+## *Which core tidyverse package would you like to learn about in a future RUG meeting?*
+
+![](purrr_figs/rug_poll.png){fig-align="center"}
+
+## Functional Programming in R with `purrr`
+
+### 1. Functional programming  
+### 2. `purrr` and `map()` functions  
+### 3. `purrr` and base R alternatives  
+### 4. More `purrr` operations and extensions
+
+# Functional programming
+
+## Object-oriented and functional programming
+
+R is a functional programming (FP) language, but has several object oriented programming (OOP) systems built on top
+
+- OOP: have a fixed set of *operations* on *things*; primarily adding new *things* by adding new classes which implement existing methods
+- FP: have a fixed set of things using operations; primarily adding new *operations* on existing things
+
+## Reducing duplication in code
+
+- easier to see intent and understand (less code)
+- easier to change (less code to change)
+- easier to find bugs (code used more)
+
+## Imperitive and functional programming
+
+**Imperitive**: deduplicating repetitive code through iteration
+
+**Functional**: abstracting away common code into smaller chunks
+
+## [Iterating](https://r4ds.had.co.nz/iteration.html) using `for` and `while` loops
+
+1. **output**: allocate space for output
+2. **sequence**: what to loop over
+3. **body**: does the work
+
+```{r}
+#| eval: TRUE
+#| echo: TRUE
+d <-
+  tibble::tibble(a = rnorm(20),
+                 b = rnorm(20),
+                 c = rnorm(20))
+
+output <- vector("double", ncol(d))  # 1. output
+for (i in seq_along(d)) {            # 2. sequence
+  output[[i]] <- median(d[[i]])      # 3. body
+}
+output
+```
+## Iteration vs. functions
+
+- Loops use bookkeeping code that can be verbose and make it harder to understand the intent of the code
+- Functions extract duplicated code, including for loops, and can be called directly
+- Pass functions as arguments to other functions (!) to call indirectly
+
+## Functional approach
+
+Break down common list manipulation challenges into smaller pieces. Solve for one element, then use functional tools to apply to all elements.
+
+Decompose complex problems into small, stepwise pieces.
+
+Increase code *speed* and *clarity* with respect to reading, writing, and understanding code.
+
+# `purrr` and `map()` functions
+
+## `purrr`
+
+:::: {.columns}
+
+::: {.column width="60%"}
+
+<https://purrr.tidyverse.org/>
+
+[`purrr` cheatsheet](https://github.com/rstudio/cheatsheets/raw/main/purrr.pdf)
+
+[version 1.0 release post](https://www.tidyverse.org/blog/2022/12/purrr-1-0-0/)
+:::
+
+::: {.column width="40%"}
+![](https://purrr.tidyverse.org/logo.png){width=80%}
+:::
+
+::::
+
+## map
+
+![](purrr_figs/map_one_list.png){width=300%}
+
+Loop over a vector, do something to each element, and save the results.
+
+## map example
+
+Apply a function to each column in a data.frame:
+
+```{r}
+#| eval: TRUE
+#| echo: TRUE
+library(tibble)
+library(purrr)
+
+d <-
+  tibble(
+    a = rnorm(20),
+    b = rnorm(20),
+    c = rnorm(20)
+  )
+
+map(d, median)
+```
+
+## map details
+
+- Preserves length and names of input
+- `...` to pass along additional arguments to `.f` each time it's called
+- Implemented in C
+- Strict type outputs
+
+## map types
+
+:::: {.columns}
+
+::: {.column width="50%"}
+
+| function | type  |
+|---------|-----|
+| `map()` | list |
+| `map_lgl()` | logical  |
+| `map_int()` | integer  |
+| `map_dbl()` | double  |
+| `map_chr()` | character  |
+
+:::
+
+::: {.column width="50%"}
+
+```{r}
+#| eval: TRUE
+#| echo: TRUE
+map_dbl(d, median)
+```
+
+&nbsp;
+
+```{r}
+#| eval: TRUE
+#| echo: TRUE
+#| error: TRUE
+map_lgl(d, median)
+```
+
+:::
+
+::::
+
+## Using lists of data
+
+`split()` is from base R and divides a vector into groups defined by a 'factor':
+
+```{r}
+#| eval: TRUE
+#| echo: TRUE
+mtcars |>
+  split(mtcars$cyl)
+```
+
+## Anonymous functions and named components
+
+```{r}
+#| eval: TRUE
+#| echo: TRUE
+mtcars |>
+  split(mtcars$cyl) |>
+  map(~ lm(mpg ~ wt, data = .)) |>
+  map(summary) |>
+  map_dbl("r.squared")
+```
+
+# `purrr` and base R alternatives
+
+## `lapply()` and `sapply()`
+
+- `lapply()` is equivalent to `map()`
+- `sapply()` is a wrapper around `lapply()` with automatic simplification of the output, but this makes it not type-stable
+- [more comparison of purrr's functionals to base equivalents](https://purrr.tidyverse.org/articles/base.html)
+
+## Advantages of using `purrr` over equivalents in base R
+
+- First argument is always data; works with pipe
+- Type-stable
+- All `map()` functions accept functions (named, anonymous, lambda), character vector (extract by name), numeric vectors (extract by position)
+
+# More `purrr` operations and extensions
+
+## Dealing with failure
+
+- `safely()` + `list_transpose()` to get a list of all results and a list of all errors
+- `possibly()`, `quietly()`
+
+## `map` over multiple arguments
+
+- `map2()`: refer to variables with `.x` and `.y`
+- `pmap()`: refer to variables with `..1`, `..2`, and `..3`
+  - named arguments for use in pmap (store in a tibble or a list)
+- `walk()`, `walk2()`, `pwalk()` called for side effects
+
+## `map` variants
+
+- Map conditionally: `map_if()`, `map_at()`
+- Map/modify elements at given depth: `map_depth()`, `modify_depth()`
+- Modify elements selectively: `modify()`, `modify_if()`, `modify_at()`
+
+## Plucking
+
+Get, set, or remove a single element
+
+- `pluck()`, `chuck()`
+- `modify_in()`, `assign_in()`
+
+## Predicate functionals
+
+- `keep()`, `discard()`, `compact()`
+- `keep_at()`, `discard_at()`
+- `some()`, `every()`, `none()`
+- `detect()`, `detect_index()`
+- `head_while()`, `tail_while()`
+
+## Monitor `map` code with progress bars from `cli`
+
+```{r}
+#| echo: TRUE
+#| eval: TRUE
+walk(1:3, Sys.sleep, .progress = TRUE)
+```
+
+## `dplyr` and list columns
+
+Use {dplyr} to create a `data` list-column and add new columns:
+
+```{r}
+#| eval: TRUE
+#| echo: TRUE
+library(dplyr)
+
+mtcars |>
+  nest_by(cyl)
+```
+
+## `dplyr::mutate()` using `map`
+
+```{r}
+#| eval: TRUE
+#| echo: TRUE
+mtcars |>
+  group_by(cyl) |>
+  tidyr::nest() |>
+  mutate(model = map(data, ~ lm(mpg ~ wt, data = .)),
+         summary = map(model, summary),
+         rsq = map_dbl(summary, "r.squared"))
+```
+
+## `dplyr::nest_by()`
+
+```{r}
+#| eval: TRUE
+#| echo: TRUE
+mtcars |> 
+  nest_by(cyl) |>
+  mutate(model = list(lm(mpg ~ wt, data = data)),
+         summary = list(summary(model)),
+         rsq = summary$r.squared)
+```
+
+## `dplyr::nest_by()`
+
+```{r}
+#| eval: TRUE
+#| echo: TRUE
+mtcars |> 
+  nest_by(cyl, vs) |>
+  mutate(model = list(lm(mpg ~ wt, data = data)),
+         summary = list(summary(model)),
+         rsq = summary$r.squared)
+```
+
+## Extensions
+
+- [{future}](https://cran.r-project.org/web/packages/future/index.html) and [{furrr}](https://cran.r-project.org/web/packages/furrr/index.html)
+- [{mappp}](https://cran.r-project.org/web/packages/mappp/index.html)
+
+## Thank You
+
+🌐 [https://colebrokamp.com](https://colebrokamp.com)
+
+👨‍💻️ [github.com/cole-brokamp](https://github.com/cole-brokamp)
+
+🐦 [@cole_brokamp](https://twitter.com/cole_brokamp)
+
+📧 [cole.brokamp@cchmc.org](mailto:cole.brokamp@cchmc.org)
+
+
+
